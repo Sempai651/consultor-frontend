@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "Consultor Frontend",
+    "slug": "consultor-frontend",
+    "version": "1.0.0",
+    "scheme": "consultor",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0A2472"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.consultor.app"
+    },
+    "android": {
+      "package": "com.consultor.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0A2472"
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "consultor"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    },
+    "web": {}
+  }
+}
