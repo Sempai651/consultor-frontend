@@ -19,23 +19,24 @@ const HomeScreen = ({ navigation }: any) => {
     { label: 'Mensajes', value: '3', icon: 'message-square' },
   ];
 
-const handleLogout = async () => {
-  Alert.alert(
-    'Cerrar Sesión',
-    '¿Estás seguro que deseas salir?',
-    [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Cerrar Sesión',
-        onPress: async () => {
-          await signOut()
-        
-        },
-        style: 'destructive'
-      }
-    ]
-  )
-}
+  const handleLogout = async () => {
+    Alert.alert(
+      'Cerrar Sesión',
+      '¿Estás seguro que deseas salir?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Cerrar Sesión',
+          onPress: async () => {
+            await signOut();
+            // Navegar directamente al Login
+            navigation.replace('Login');
+          },
+          style: 'destructive'
+        }
+      ]
+    );
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: COLORS.background }]}>

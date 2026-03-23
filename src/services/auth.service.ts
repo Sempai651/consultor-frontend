@@ -14,7 +14,6 @@ export const authService = {
     const response = await api.post<LoginResponse>('/auth/login', data)
     if (response.data.data?.token) {
       await AsyncStorage.setItem('@Auth:token', response.data.data.token)
-      // Guardar también el usuario si viene en la respuesta
       if (response.data.data?.usuario) {
         await AsyncStorage.setItem('@Auth:user', JSON.stringify(response.data.data.usuario))
       }
@@ -24,14 +23,21 @@ export const authService = {
 
   async register(data: RegisterRequest): Promise<RegisterResponse> {
     const response = await api.post<RegisterResponse>('/auth/register', data)
-    // NO guardamos el token automáticamente
-    // Solo retornamos la respuesta, no iniciamos sesión
+    // ✅ No guardamos token, solo registramos
     return response.data
   },
 
   async logout(): Promise<void> {
-    await AsyncStorage.removeItem('@Auth:token')
-    await AsyncStorage.removeItem('@Auth:user')
+    try {
+      // Llamar al backend para invalidar el token
+      await api.post('/auth/logout')
+    } catch (error) {
+      console.error('Error en logout del backend:', error)
+    } finally {
+      // Siempre limpiar almacenamiento local
+      await AsyncStorage.removeItem('@Auth:token')
+      await AsyncStorage.removeItem('@Auth:user')
+    }
   },
 
   async recuperarClave(email: string): Promise<ApiResponse> {

@@ -2,7 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { authService } from '../services/auth.service'
 
-// ─── Interfaces ───────────────────────────────────────
+// Interfaces
 interface Usuario {
   id: number
   nombre: string
@@ -14,7 +14,6 @@ interface AuthContextData {
   user: Usuario | null
   loading: boolean
   signIn: (cedula: string, password: string) => Promise<void>
-  signUp: (nombre: string, apellido: string, cedula: string, email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
 }
 
@@ -43,14 +42,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  // ─── LOGIN ────────────────────────────────────────────
+  //  LOGIN 
   async function signIn(cedula: string, password: string) {
-    // Llama al backend real
     const response = await authService.login({ cedula, password })
 
     if (response.success) {
       const { token, usuario } = response.data
-      // Guarda token y usuario en el dispositivo
       await AsyncStorage.setItem('@Auth:token', token)
       await AsyncStorage.setItem('@Auth:user', JSON.stringify(usuario))
       setUser(usuario)
@@ -59,40 +56,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  // ─── REGISTRO ─────────────────────────────────────────
-  async function signUp(
-    nombre: string,
-    apellido: string,
-    cedula: string,
-    email: string,
-    password: string
-  ) {
-    const response = await authService.register({
-      nombre,
-      apellido,
-      cedula,
-      email,
-      password,
-    })
-
-    if (response.success) {
-      const { token, usuario } = response.data
-      await AsyncStorage.setItem('@Auth:token', token)
-      await AsyncStorage.setItem('@Auth:user', JSON.stringify(usuario))
-      setUser(usuario)
-    } else {
-      throw new Error(response.message)
-    }
-  }
-
-  // ─── LOGOUT ───────────────────────────────────────────
+  //  LOGOUT
   async function signOut() {
     await authService.logout()
     setUser(null)
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   )
