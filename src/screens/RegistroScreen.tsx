@@ -8,23 +8,21 @@ import Input from '../components/Input'
 import Button from '../components/Button'
 import { COLORS } from '../constants/colors'
 import { getCiError } from '../utils/validators'
-import { useAuth } from '../hooks/useAuth'
+import { authService } from '../services/auth.service'
 
 const RegistroScreen = ({ navigation }: any) => {
-  const { signUp } = useAuth()    // ← conectamos con el contexto
-
   const [nombre, setNombre] = useState('')
-  const [apellido, setApellido] = useState('')   // ← nuevo campo
+  const [apellido, setApellido] = useState('')
   const [email, setEmail] = useState('')
-  const [ci, setCi] = useState('')
+  const [cedula, setCedula] = useState('')  // ← cambió de ci a cedula
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
   const [nombreError, setNombreError] = useState('')
-  const [apellidoError, setApellidoError] = useState('')  // ← nuevo
+  const [apellidoError, setApellidoError] = useState('')
   const [emailError, setEmailError] = useState('')
-  const [ciError, setCiError] = useState('')
+  const [cedulaError, setCedulaError] = useState('')  // ← cambió
   const [passwordError, setPasswordError] = useState('')
   const [confirmError, setConfirmError] = useState('')
 
@@ -38,47 +36,74 @@ const RegistroScreen = ({ navigation }: any) => {
     if (!nombre.trim()) {
       setNombreError('El nombre es requerido')
       hasError = true
-    } else setNombreError('')
+    } else {
+      setNombreError('')
+    }
 
     if (!apellido.trim()) {
       setApellidoError('El apellido es requerido')
       hasError = true
-    } else setApellidoError('')
+    } else {
+      setApellidoError('')
+    }
 
     if (!validateEmail(email)) {
       setEmailError('Ingrese un correo válido')
       hasError = true
-    } else setEmailError('')
+    } else {
+      setEmailError('')
+    }
 
-    const ciValidation = getCiError(ci)
-    if (ciValidation) {
-      setCiError(ciValidation)
+    const cedulaValidation = getCiError(cedula)  // ← validación de cédula
+    if (cedulaValidation) {
+      setCedulaError(cedulaValidation)
       hasError = true
-    } else setCiError('')
+    } else {
+      setCedulaError('')
+    }
 
     if (!password || password.length < 6) {
       setPasswordError('La contraseña debe tener al menos 6 caracteres')
       hasError = true
-    } else setPasswordError('')
+    } else {
+      setPasswordError('')
+    }
 
     if (password !== confirmPassword) {
       setConfirmError('Las contraseñas no coinciden')
       hasError = true
-    } else setConfirmError('')
+    } else {
+      setConfirmError('')
+    }
 
     if (hasError) return
 
-    // ─── Llamada real al backend ───────────────────────
     setLoading(true)
     try {
-      await signUp(nombre, apellido, ci, email, password)
-      // signUp guarda el token y navega automáticamente
-      // porque el AuthContext actualiza el user
-      // y el AppNavigator detecta que hay sesión
+      // Usar "cedula" como pide la interfaz
+      await authService.register({
+        nombre: nombre,
+        apellido: apellido,
+        email: email,
+        cedula: cedula,      // ← clave correcta
+        password: password
+      })
+
+      Alert.alert(
+        'Registro Exitoso',
+        `Usuario ${nombre} ${apellido} ha sido registrado correctamente.\n\nAhora puedes iniciar sesión con tu cédula y contraseña.`,
+        [
+          {
+            text: 'Ir al Login',
+            onPress: () => navigation.navigate('Login')
+          }
+        ]
+      )
     } catch (error: any) {
+      console.error('Error en registro:', error)
       Alert.alert(
         'Error en el registro',
-        error.message || 'No se pudo completar el registro'
+        error.response?.data?.message || error.message || 'No se pudo completar el registro'
       )
     } finally {
       setLoading(false)
@@ -130,16 +155,16 @@ const RegistroScreen = ({ navigation }: any) => {
 
           <Input
             label="CÉDULA ECUATORIANA"
-            value={ci}
+            value={cedula}
             onChangeText={(text) => {
               const numericText = text.replace(/[^0-9]/g, '')
-              setCi(numericText)
-              setCiError('')
+              setCedula(numericText)
+              setCedulaError('')
             }}
             placeholder="Ingrese su cédula (10 dígitos)"
             keyboardType="numeric"
             iconName="credit-card"
-            error={ciError}
+            error={cedulaError}
             maxLength={10}
           />
 

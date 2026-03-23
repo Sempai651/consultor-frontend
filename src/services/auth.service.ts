@@ -14,15 +14,18 @@ export const authService = {
     const response = await api.post<LoginResponse>('/auth/login', data)
     if (response.data.data?.token) {
       await AsyncStorage.setItem('@Auth:token', response.data.data.token)
+      // Guardar también el usuario si viene en la respuesta
+      if (response.data.data?.usuario) {
+        await AsyncStorage.setItem('@Auth:user', JSON.stringify(response.data.data.usuario))
+      }
     }
     return response.data
   },
 
   async register(data: RegisterRequest): Promise<RegisterResponse> {
     const response = await api.post<RegisterResponse>('/auth/register', data)
-    if (response.data.data?.token) {
-      await AsyncStorage.setItem('@Auth:token', response.data.data.token)
-    }
+    // NO guardamos el token automáticamente
+    // Solo retornamos la respuesta, no iniciamos sesión
     return response.data
   },
 
