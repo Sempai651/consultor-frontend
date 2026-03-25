@@ -1,8 +1,5 @@
-// Validación de cédula ecuatoriana
 export const validateEcuadorianId = (ci: string): boolean => {
   if (!ci || ci.length !== 10) return false;
-  
-  // Validar que solo sean números
   if (!/^\d+$/.test(ci)) return false;
   
   const digits = ci.split('').map(Number);

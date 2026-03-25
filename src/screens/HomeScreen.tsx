@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { useAuth } from '../hooks/useAuth';
 
+
 const HomeScreen = ({ navigation }: any) => {
   const { signOut, user } = useAuth();
 
@@ -20,23 +21,16 @@ const HomeScreen = ({ navigation }: any) => {
   ];
 
   const handleLogout = async () => {
-    Alert.alert(
-      'Cerrar Sesión',
-      '¿Estás seguro que deseas salir?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Cerrar Sesión',
-          onPress: async () => {
-            await signOut();
-            // Navegar directamente al Login
-            navigation.replace('Login');
-          },
-          style: 'destructive'
-        }
-      ]
-    );
-  };
+    const confirmacion = window.confirm ("Desea cerrar sesion");
+    console.log(confirmacion);
+    
+    if (!confirmacion) return
+    if (!localStorage.getItem("@Auth:token") && !localStorage.getItem("@Auth:user") )  return
+            localStorage.clear()
+            window.location.reload();
+
+    };
+
 
   return (
     <View style={[styles.container, { backgroundColor: COLORS.background }]}>

@@ -1,5 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, StatusBar } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  StatusBar,
+} from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Input from '../components/Input';
 import Button from '../components/Button';
@@ -13,7 +23,7 @@ const LoginScreen = ({ navigation }: any) => {
   const [ciError, setCiError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth(); // Usar el contexto de autenticación
+  const { signIn } = useAuth();
 
   const handleLogin = async () => {
     const ciValidation = getCiError(ci);
@@ -29,11 +39,9 @@ const LoginScreen = ({ navigation }: any) => {
     
     setLoading(true);
     try {
-      // Llamar al signIn del contexto
       await signIn(ci, password);
-      // Después de login exitoso, el RootNavigator en App.tsx mostrará AppNavigator automáticamente
-    } catch (error) {
-      Alert.alert('Error', 'Credenciales inválidas');
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Credenciales inválidas');
     } finally {
       setLoading(false);
     }
@@ -83,6 +91,7 @@ const LoginScreen = ({ navigation }: any) => {
               secureTextEntry
               iconName="lock"
               error={passwordError}
+              showPasswordToggle={true}
             />
 
             <TouchableOpacity style={styles.forgotContainer} onPress={() => navigation.navigate('RecuperarClave')}>

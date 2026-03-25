@@ -1,114 +1,147 @@
-import React, { useState } from 'react'
+import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, Alert, StatusBar
-} from 'react-native'
-import { Feather } from '@expo/vector-icons'
-import Input from '../components/Input'
-import Button from '../components/Button'
-import { COLORS } from '../constants/colors'
-import { getCiError } from '../utils/validators'
-import { authService } from '../services/auth.service'
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  StatusBar,
+} from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import Input from '../components/Input';
+import Button from '../components/Button';
+import { COLORS } from '../constants/colors';
+import { getCiError, getPasswordError } from '../utils/validators';
+import { authService } from '../services/auth.service';
 
 const RegistroScreen = ({ navigation }: any) => {
-  const [nombre, setNombre] = useState('')
-  const [apellido, setApellido] = useState('')
-  const [email, setEmail] = useState('')
-  const [cedula, setCedula] = useState('')  // ← cambió de ci a cedula
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [nombre, setNombre] = useState('');
+  const [apellido, setApellido] = useState('');
+  const [email, setEmail] = useState('');
+  const [cedula, setCedula] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const [nombreError, setNombreError] = useState('')
-  const [apellidoError, setApellidoError] = useState('')
-  const [emailError, setEmailError] = useState('')
-  const [cedulaError, setCedulaError] = useState('')  // ← cambió
-  const [passwordError, setPasswordError] = useState('')
-  const [confirmError, setConfirmError] = useState('')
+  const [nombreError, setNombreError] = useState('');
+  const [apellidoError, setApellidoError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [cedulaError, setCedulaError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [confirmError, setConfirmError] = useState('');
 
   const validateEmail = (email: string): boolean => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-  }
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const limpiarFormulario = () => {
+    setNombre('');
+    setApellido('');
+    setEmail('');
+    setCedula('');
+    setPassword('');
+    setConfirmPassword('');
+    setNombreError('');
+    setApellidoError('');
+    setEmailError('');
+    setCedulaError('');
+    setPasswordError('');
+    setConfirmError('');
+  };
 
   const handleRegister = async () => {
-    let hasError = false
+    let hasError = false;
 
+    // Validaciones
     if (!nombre.trim()) {
-      setNombreError('El nombre es requerido')
-      hasError = true
+      setNombreError('El nombre es requerido');
+      hasError = true;
     } else {
-      setNombreError('')
+      setNombreError('');
     }
 
     if (!apellido.trim()) {
-      setApellidoError('El apellido es requerido')
-      hasError = true
+      setApellidoError('El apellido es requerido');
+      hasError = true;
     } else {
-      setApellidoError('')
+      setApellidoError('');
     }
 
     if (!validateEmail(email)) {
-      setEmailError('Ingrese un correo válido')
-      hasError = true
+      setEmailError('Ingrese un correo válido');
+      hasError = true;
     } else {
-      setEmailError('')
+      setEmailError('');
     }
 
-    const cedulaValidation = getCiError(cedula)  // ← validación de cédula
-    if (cedulaValidation) {
-      setCedulaError(cedulaValidation)
-      hasError = true
+    const ciValidation = getCiError(cedula);
+    if (ciValidation) {
+      setCedulaError(ciValidation);
+      hasError = true;
     } else {
-      setCedulaError('')
+      setCedulaError('');
     }
 
-    if (!password || password.length < 6) {
-      setPasswordError('La contraseña debe tener al menos 6 caracteres')
-      hasError = true
+    const passwordValidation = getPasswordError(password);
+    if (passwordValidation) {
+      setPasswordError(passwordValidation);
+      hasError = true;
     } else {
-      setPasswordError('')
+      setPasswordError('');
     }
 
     if (password !== confirmPassword) {
-      setConfirmError('Las contraseñas no coinciden')
-      hasError = true
+      setConfirmError('Las contraseñas no coinciden');
+      hasError = true;
     } else {
-      setConfirmError('')
+      setConfirmError('');
     }
 
-    if (hasError) return
+    if (hasError) return;
 
-    setLoading(true)
+    setLoading(true);
+
     try {
-      // Usar "cedula" como pide la interfaz
-      await authService.register({
-        nombre: nombre,
-        apellido: apellido,
-        email: email,
-        cedula: cedula,      // ← clave correcta
-        password: password
-      })
+      console.log('Enviando registro:', { nombre, apellido, email, cedula, password });
 
-      Alert.alert(
-        'Registro Exitoso',
-        `Usuario ${nombre} ${apellido} ha sido registrado correctamente.\n\nAhora puedes iniciar sesión con tu cédula y contraseña.`,
-        [
-          {
-            text: 'Ir al Login',
-            onPress: () => navigation.navigate('Login')
-          }
-        ]
-      )
+      const response = await authService.register({
+        nombre,
+        apellido,
+        email,
+        cedula,
+        password
+      });
+
+      console.log('Respuesta del backend:', response);
+
+      if (response.success) {
+        Alert.alert(
+          '✅ Registro Exitoso',
+          `Usuario ${nombre} ${apellido} ha sido registrado correctamente.\n\nAhora puedes iniciar sesión con tu cédula y contraseña.`,
+          [
+            {
+              text: 'Ir al Login',
+              onPress: () => {
+                limpiarFormulario();
+                navigation.navigate('Login');
+              }
+            }
+          ]
+        );
+      } else {
+        Alert.alert('Error', response.message || 'No se pudo completar el registro');
+      }
     } catch (error: any) {
-      console.error('Error en registro:', error)
+      console.error('Error en registro:', error);
       Alert.alert(
         'Error en el registro',
         error.response?.data?.message || error.message || 'No se pudo completar el registro'
-      )
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: COLORS.background }]}>
@@ -128,7 +161,7 @@ const RegistroScreen = ({ navigation }: any) => {
           <Input
             label="NOMBRE"
             value={nombre}
-            onChangeText={(text) => { setNombre(text); setNombreError('') }}
+            onChangeText={(text) => { setNombre(text); setNombreError(''); }}
             placeholder="Ingrese su nombre"
             iconName="user"
             error={nombreError}
@@ -137,7 +170,7 @@ const RegistroScreen = ({ navigation }: any) => {
           <Input
             label="APELLIDO"
             value={apellido}
-            onChangeText={(text) => { setApellido(text); setApellidoError('') }}
+            onChangeText={(text) => { setApellido(text); setApellidoError(''); }}
             placeholder="Ingrese su apellido"
             iconName="user"
             error={apellidoError}
@@ -146,7 +179,7 @@ const RegistroScreen = ({ navigation }: any) => {
           <Input
             label="CORREO ELECTRÓNICO"
             value={email}
-            onChangeText={(text) => { setEmail(text); setEmailError('') }}
+            onChangeText={(text) => { setEmail(text); setEmailError(''); }}
             placeholder="ejemplo@correo.com"
             keyboardType="email-address"
             iconName="mail"
@@ -157,9 +190,9 @@ const RegistroScreen = ({ navigation }: any) => {
             label="CÉDULA ECUATORIANA"
             value={cedula}
             onChangeText={(text) => {
-              const numericText = text.replace(/[^0-9]/g, '')
-              setCedula(numericText)
-              setCedulaError('')
+              const numericText = text.replace(/[^0-9]/g, '');
+              setCedula(numericText);
+              setCedulaError('');
             }}
             placeholder="Ingrese su cédula (10 dígitos)"
             keyboardType="numeric"
@@ -171,21 +204,23 @@ const RegistroScreen = ({ navigation }: any) => {
           <Input
             label="CONTRASEÑA"
             value={password}
-            onChangeText={(text) => { setPassword(text); setPasswordError('') }}
-            placeholder="Mínimo 6 caracteres"
+            onChangeText={(text) => { setPassword(text); setPasswordError(''); }}
+            placeholder="Mínimo 8 caracteres, mayúscula, minúscula, número y carácter especial"
             secureTextEntry
             iconName="lock"
             error={passwordError}
+            showPasswordToggle={true}
           />
 
           <Input
             label="CONFIRMAR CONTRASEÑA"
             value={confirmPassword}
-            onChangeText={(text) => { setConfirmPassword(text); setConfirmError('') }}
+            onChangeText={(text) => { setConfirmPassword(text); setConfirmError(''); }}
             placeholder="Confirme su contraseña"
             secureTextEntry
             iconName="lock"
             error={confirmError}
+            showPasswordToggle={true}
           />
 
           <Button
@@ -206,8 +241,8 @@ const RegistroScreen = ({ navigation }: any) => {
         </View>
       </ScrollView>
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -218,6 +253,6 @@ const styles = StyleSheet.create({
   card: { borderRadius: 30, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
   loginLink: { marginTop: 20, alignItems: 'center' },
   loginLinkText: { fontSize: 14, fontWeight: '500', textDecorationLine: 'underline' },
-})
+});
 
-export default RegistroScreen
+export default RegistroScreen;
