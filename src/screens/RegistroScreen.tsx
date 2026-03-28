@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   StatusBar,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
@@ -57,54 +56,40 @@ const RegistroScreen = ({ navigation }: any) => {
     if (!nombre.trim()) {
       setNombreError('El nombre es requerido');
       hasError = true;
-    } else {
-      setNombreError('');
-    }
+    } else setNombreError('');
 
     if (!apellido.trim()) {
       setApellidoError('El apellido es requerido');
       hasError = true;
-    } else {
-      setApellidoError('');
-    }
+    } else setApellidoError('');
 
     if (!validateEmail(email)) {
       setEmailError('Ingrese un correo válido');
       hasError = true;
-    } else {
-      setEmailError('');
-    }
+    } else setEmailError('');
 
     const ciValidation = getCiError(cedula);
     if (ciValidation) {
       setCedulaError(ciValidation);
       hasError = true;
-    } else {
-      setCedulaError('');
-    }
+    } else setCedulaError('');
 
     const passwordValidation = getPasswordError(password);
     if (passwordValidation) {
       setPasswordError(passwordValidation);
       hasError = true;
-    } else {
-      setPasswordError('');
-    }
+    } else setPasswordError('');
 
     if (password !== confirmPassword) {
       setConfirmError('Las contraseñas no coinciden');
       hasError = true;
-    } else {
-      setConfirmError('');
-    }
+    } else setConfirmError('');
 
     if (hasError) return;
 
     setLoading(true);
 
     try {
-      console.log('Enviando registro:', { nombre, apellido, email, cedula, password });
-
       const response = await authService.register({
         nombre,
         apellido,
@@ -113,31 +98,18 @@ const RegistroScreen = ({ navigation }: any) => {
         password
       });
 
-      console.log('Respuesta del backend:', response);
+      console.log('✅ Registro exitoso:', response);
 
-      if (response.success) {
-        Alert.alert(
-          '✅ Registro Exitoso',
-          `Usuario ${nombre} ${apellido} ha sido registrado correctamente.\n\nAhora puedes iniciar sesión con tu cédula y contraseña.`,
-          [
-            {
-              text: 'Ir al Login',
-              onPress: () => {
-                limpiarFormulario();
-                navigation.navigate('Login');
-              }
-            }
-          ]
-        );
-      } else {
-        Alert.alert('Error', response.message || 'No se pudo completar el registro');
-      }
+      // ✅ Usar window.alert para web (funciona siempre)
+      window.alert(`✅ Registro Exitoso\n\nUsuario ${nombre} ${apellido} ha sido registrado correctamente.\n\nAhora puedes iniciar sesión con tu cédula y contraseña.`);
+      
+      // Limpiar formulario y redirigir
+      limpiarFormulario();
+      navigation.navigate('Login');
+
     } catch (error: any) {
-      console.error('Error en registro:', error);
-      Alert.alert(
-        'Error en el registro',
-        error.response?.data?.message || error.message || 'No se pudo completar el registro'
-      );
+      console.error('❌ Error:', error);
+      window.alert(`❌ Error en el registro\n\n${error.response?.data?.message || error.message || 'No se pudo completar el registro'}`);
     } finally {
       setLoading(false);
     }
