@@ -4,14 +4,14 @@ import { Feather } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { useAuth } from '../hooks/useAuth';
 
-
 const HomeScreen = ({ navigation }: any) => {
   const { signOut, user } = useAuth();
 
   const menuItems = [
     { id: 1, title: 'Funciones', icon: 'settings', description: 'Gestión de proveedores y obligaciones', screen: 'MainTabs', params: { screen: 'Funciones' } },
     { id: 2, title: 'Herramientas', icon: 'tool', description: 'Calculadoras y utilidades empresariales', screen: 'MainTabs', params: { screen: 'Herramientas' } },
-    { id: 3, title: 'Contáctanos', icon: 'phone', description: 'Soporte y atención al cliente', screen: 'MainTabs', params: { screen: 'Contacto' } },
+    { id: 3, title: 'Promociones', icon: 'tag', description: 'Gestiona tus promociones y ofertas', screen: 'Promociones' }, // ← NUEVO
+    { id: 4, title: 'Contáctanos', icon: 'phone', description: 'Soporte y atención al cliente', screen: 'MainTabs', params: { screen: 'Contacto' } },
   ];
 
   const stats = [
@@ -21,16 +21,22 @@ const HomeScreen = ({ navigation }: any) => {
   ];
 
   const handleLogout = async () => {
-    const confirmacion = window.confirm ("Desea cerrar sesion");
+    const confirmacion = window.confirm("¿Desea cerrar sesión?");
     console.log(confirmacion);
     
-    if (!confirmacion) return
-    if (!localStorage.getItem("@Auth:token") && !localStorage.getItem("@Auth:user") )  return
-            localStorage.clear()
-            window.location.reload();
+    if (!confirmacion) return;
+    if (!localStorage.getItem("@Auth:token") && !localStorage.getItem("@Auth:user")) return;
+    localStorage.clear();
+    window.location.reload();
+  };
 
-    };
-
+  // Determinar color según ID
+  const getColor = (id: number) => {
+    if (id === 1) return '#2A4494';
+    if (id === 2) return '#E6B91E';
+    if (id === 3) return '#F59E0B'; // Color para promociones
+    return '#0F973D';
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: COLORS.background }]}>
@@ -68,10 +74,16 @@ const HomeScreen = ({ navigation }: any) => {
           <TouchableOpacity
             key={item.id}
             style={styles.menuCard}
-            onPress={() => navigation.navigate(item.screen, item.params)}
+            onPress={() => {
+              if (item.screen === 'Promociones') {
+                navigation.navigate('Promociones');
+              } else {
+                navigation.navigate(item.screen, item.params);
+              }
+            }}
             activeOpacity={0.8}
           >
-            <View style={[styles.menuGradient, { backgroundColor: item.id === 1 ? '#2A4494' : (item.id === 2 ? '#E6B91E' : '#0F973D') }]}>
+            <View style={[styles.menuGradient, { backgroundColor: getColor(item.id) }]}>
               <View style={[styles.menuIconContainer, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
                 <Feather name={item.icon as any} size={28} color="#FFFFFF" />
               </View>
