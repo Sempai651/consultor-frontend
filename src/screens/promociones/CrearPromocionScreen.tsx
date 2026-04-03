@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   StatusBar,
   TextInput,
   Image,
@@ -60,7 +59,7 @@ export const CrearPromocionScreen = ({ navigation }: any) => {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permiso denegado', 'Necesitamos acceso a tus imágenes');
+      alert('Necesitamos acceso a tus imágenes');
       return;
     }
 
@@ -78,7 +77,7 @@ export const CrearPromocionScreen = ({ navigation }: any) => {
 
   const handleCreate = async () => {
     if (!validarFormulario()) {
-      Alert.alert('❌ Datos incompletos', 'Por favor completa todos los campos correctamente');
+      alert('❌ Por favor completa todos los campos correctamente');
       return;
     }
 
@@ -91,11 +90,12 @@ export const CrearPromocionScreen = ({ navigation }: any) => {
         fecha_vencimiento: fechaVencimiento.trim(),
         imagen: imagen || '',
       });
-      Alert.alert('✅ Promoción Creada', `"${titulo}" ha sido creada exitosamente`, [
-        { text: 'Ver Promociones', onPress: () => navigation.goBack() }
-      ]);
+      
+      alert(`✅ Promoción "${titulo}" creada exitosamente`);
+      navigation.goBack();
+      
     } catch (error: any) {
-      Alert.alert('❌ Error', error.response?.data?.message || 'No se pudo crear la promoción');
+      alert('❌ Error: No se pudo crear la promoción');
     } finally {
       setLoading(false);
     }

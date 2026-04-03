@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, TextInput, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { useAuth } from '../hooks/useAuth';
 import { PromocionesDestacadas } from '../components/PromocionesDestacadas';
+import { ActividadReciente } from '../components/ActividadReciente';
 
 const HomeScreen = ({ navigation }: any) => {
   const { signOut, user } = useAuth();
@@ -93,29 +94,19 @@ const HomeScreen = ({ navigation }: any) => {
 
         <View style={styles.activitySection}>
           <Text style={[styles.sectionTitle, { color: COLORS.text }]}>Actividad Reciente</Text>
-          <View style={[styles.activityCard, { backgroundColor: COLORS.surface }]}>
-            <View style={styles.activityItem}>
-              <Feather name="home" size={20} color={COLORS.primary} style={styles.activityIcon} />
-              <View style={styles.activityContent}>
-                <Text style={[styles.activityTitle, { color: COLORS.text }]}>Nuevo proveedor registrado</Text>
-                <Text style={[styles.activityTime, { color: COLORS.textLight }]}>Hace 2 horas</Text>
-              </View>
-            </View>
-            <View style={styles.activityItem}>
-              <Feather name="credit-card" size={20} color={COLORS.accent} style={styles.activityIcon} />
-              <View style={styles.activityContent}>
-                <Text style={[styles.activityTitle, { color: COLORS.text }]}>Pago programado</Text>
-                <Text style={[styles.activityTime, { color: COLORS.textLight }]}>Hace 5 horas</Text>
-              </View>
-            </View>
-            <View style={styles.activityItem}>
-              <Feather name="message-circle" size={20} color={COLORS.success} style={styles.activityIcon} />
-              <View style={styles.activityContent}>
-                <Text style={[styles.activityTitle, { color: COLORS.text }]}>Mensaje de soporte</Text>
-                <Text style={[styles.activityTime, { color: COLORS.textLight }]}>Ayer</Text>
-              </View>
-            </View>
-          </View>
+          <ActividadReciente 
+            onPressActividad={(actividad) => {
+              if (actividad.tipo === 'proveedor') {
+                navigation.navigate('Funciones');
+              } else if (actividad.tipo === 'pago') {
+                navigation.navigate('Herramientas');
+              } else if (actividad.tipo === 'promocion') {
+                navigation.navigate('Promociones');
+              } else {
+                Alert.alert('Actividad', actividad.titulo);
+              }
+            }}
+          />
         </View>
       </ScrollView>
     </View>
@@ -141,12 +132,6 @@ const styles = StyleSheet.create({
   menuTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFFFFF', marginBottom: 4 },
   menuDescription: { fontSize: 13, color: 'rgba(255,255,255,0.9)' },
   activitySection: { marginTop: 20 },
-  activityCard: { borderRadius: 20, padding: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
-  activityItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  activityIcon: { marginRight: 15, width: 30 },
-  activityContent: { flex: 1 },
-  activityTitle: { fontSize: 15, fontWeight: '600', marginBottom: 4 },
-  activityTime: { fontSize: 12 },
 });
 
 export default HomeScreen;

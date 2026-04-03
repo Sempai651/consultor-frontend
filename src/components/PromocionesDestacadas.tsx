@@ -8,6 +8,7 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { promocionesService } from '../services/promociones.service';
@@ -22,12 +23,9 @@ export const PromocionesDestacadas: React.FC<Props> = ({ onPressPromocion, busqu
   const [promociones, setPromociones] = useState<Promocion[]>([]);
   const [loading, setLoading] = useState(true);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>('Todas');
+  const isFocused = useIsFocused();
 
   const categorias = ['Todas', 'Firmas', 'Ventas', 'Consentimientos', 'Otros'];
-
-  useEffect(() => {
-    cargarPromociones();
-  }, []);
 
   const cargarPromociones = async () => {
     try {
@@ -40,6 +38,10 @@ export const PromocionesDestacadas: React.FC<Props> = ({ onPressPromocion, busqu
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    cargarPromociones();
+  }, [isFocused]); // Recarga cuando la pantalla recibe foco
 
   const getPromocionesFiltradas = () => {
     let filtradas = promociones;

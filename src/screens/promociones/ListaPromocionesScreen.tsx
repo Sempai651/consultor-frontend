@@ -41,37 +41,31 @@ export const ListaPromocionesScreen = ({ navigation }: any) => {
     return unsubscribe;
   }, [navigation]);
 
-  const eliminar = (id: number, titulo: string) => {
-    Alert.alert(
-      'Eliminar Promoción',
-      `¿Estás seguro de eliminar "${titulo}"?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Eliminar',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await promocionesService.delete(id);
-              Alert.alert('✅ Éxito', 'Promoción eliminada correctamente');
-              cargarPromociones();
-            } catch (error: any) {
-              Alert.alert('Error', error.response?.data?.message || 'No se pudo eliminar');
-            }
-          },
-        },
-      ]
-    );
+  // Función de eliminar SIMPLE y DIRECTA
+  const eliminarPromocion = (id: number, titulo: string) => {
+    const confirmacion = window.confirm(`¿Estás seguro de eliminar "${titulo}"?`);
+    if (!confirmacion) return;
+    
+    // Eliminar directamente
+    promocionesService.delete(id)
+      .then(() => {
+        alert('✅ Promoción eliminada correctamente');
+        cargarPromociones(); // Recargar lista
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+        alert('❌ No se pudo eliminar la promoción');
+      });
   };
 
   const cambiarEstado = async (id: number, estadoActual: string) => {
     const nuevoEstado = estadoActual === 'activo' ? 'inactivo' : 'activo';
     try {
       await promocionesService.toggleEstado(id, nuevoEstado);
-      Alert.alert('✅ Éxito', `Promoción ${nuevoEstado === 'activo' ? 'activada' : 'desactivada'}`);
+      alert(`✅ Promoción ${nuevoEstado === 'activo' ? 'activada' : 'desactivada'}`);
       cargarPromociones();
     } catch (error) {
-      Alert.alert('Error', 'No se pudo cambiar el estado');
+      alert('❌ No se pudo cambiar el estado');
     }
   };
 
@@ -92,10 +86,10 @@ export const ListaPromocionesScreen = ({ navigation }: any) => {
       <Text style={styles.fecha}>Vence: {new Date(item.fecha_vencimiento).toLocaleDateString()}</Text>
       <View style={styles.cardActions}>
         <TouchableOpacity onPress={() => navigation.navigate('EditarPromocion', { id: item.id })}>
-          <Feather name="edit-2" size={18} color={COLORS.primary} />
+          <Feather name="edit-2" size={20} color={COLORS.primary} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => eliminar(item.id, item.titulo)}>
-          <Feather name="trash-2" size={18} color={COLORS.error} />
+        <TouchableOpacity onPress={() => eliminarPromocion(item.id, item.titulo)}>
+          <Feather name="trash-2" size={20} color={COLORS.error} />
         </TouchableOpacity>
       </View>
     </View>
@@ -135,7 +129,6 @@ export const ListaPromocionesScreen = ({ navigation }: any) => {
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
         />
       )}
     </View>
