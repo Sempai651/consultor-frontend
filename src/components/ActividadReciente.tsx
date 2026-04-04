@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,27 +6,26 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
-import { actividadService, Actividad } from '../services/actividad.service';
+import { getActividadesRecientes, Actividad } from '../services/actividad.service';
 
 interface Props {
   onPressActividad?: (actividad: Actividad) => void;
+  navigation?: any;
 }
 
-export const ActividadReciente: React.FC<Props> = ({ onPressActividad }) => {
+export const ActividadReciente: React.FC<Props> = ({ onPressActividad, navigation }) => {
   const [actividades, setActividades] = useState<Actividad[]>([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    cargarActividades();
-  }, []);
 
   const cargarActividades = async () => {
     try {
       setLoading(true);
-      const data = await actividadService.getActividadReciente();
+      const data = await getActividadesRecientes();
       setActividades(data);
     } catch (error) {
       console.error('Error cargando actividades:', error);
@@ -35,20 +34,107 @@ export const ActividadReciente: React.FC<Props> = ({ onPressActividad }) => {
     }
   };
 
+  useFocusEffect(
+    useCallback(() => {
+      cargarActividades();
+    }, [])
+  );
+
   const formatFecha = (fechaISO: string) => {
     const fecha = new Date(fechaISO);
     const ahora = new Date();
-    const diffHoras = Math.floor((ahora.getTime() - fecha.getTime()) / (1000 * 60 * 60));
+    const diffMs = ahora.getTime() - fecha.getTime();
+    const diffMin = Math.floor(diffMs / (1000 * 60));
+    const diffHoras = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     
-    if (diffHoras < 1) return 'Hace unos minutos';
-    if (diffHoras < 24) return `Hace ${diffHoras} horas`;
-    return `Hace ${Math.floor(diffHoras / 24)} días`;
+    if (diffMin < 1) return 'Ahora mismo';
+    if (diffMin < 60) return `Hace ${diffMin} minuto${diffMin !== 1 ? 's' : ''}`;
+    if (diffHoras < 24) return `Hace ${diffHoras} hora${diffHoras !== 1 ? 's' : ''}`;
+    if (diffDias < 7) return `Hace ${diffDias} día${diffDias !== 1 ? 's' : ''}`;
+    
+    return fecha.toLocaleDateString();
+  };
+
+  const getDetalleActividad = (actividad: Actividad) => {
+    switch (actividad.tipo) {
+      case 'login':
+        return {
+          titulo: '📱 Inicio de sesión',
+          mensaje: `Ingresaste al sistema el ${new Date(actividad.fecha).toLocaleString()}`,
+          accion: 'Ver sesiones',
+        };
+      case 'logout':
+        return {
+          titulo: '🚪 Cierre de sesión',
+          mensaje: `Cerraste sesión el ${new Date(actividad.fecha).toLocaleString()}`,
+          accion: 'Ver historial',
+        };
+      case 'proveedor':
+        return {
+          titulo: '🏢 Módulo de Proveedores',
+          mensaje: `Accediste a la gestión de proveedores.\n${actividad.descripcion}`,
+          accion: 'Ir a Proveedores',
+        };
+      case 'pago':
+        return {
+          titulo: '💰 Módulo de Pagos',
+          mensaje: `Accediste a herramientas financieras.\n${actividad.descripcion}`,
+          accion: 'Ir a Pagos',
+        };
+      case 'promocion':
+        return {
+          titulo: '🎯 Módulo de Promociones',
+          mensaje: `Gestionaste promociones.\n${actividad.descripcion}`,
+          accion: 'Ir a Promociones',
+        };
+      case 'mensaje':
+        return {
+          titulo: '💬 Mensajes',
+          mensaje: `Revisaste mensajes del sistema.\n${actividad.descripcion}`,
+          accion: 'Ver mensajes',
+        };
+      default:
+        return {
+          titulo: '📋 Actividad',
+          mensaje: actividad.descripcion,
+          accion: 'Ver detalles',
+        };
+    }
+  };
+
+  const handlePressActividad = (actividad: Actividad) => {
+    const detalle = getDetalleActividad(actividad);
+    
+    Alert.alert(
+      detalle.titulo,
+      detalle.mensaje,
+      [
+        { text: 'Cerrar', style: 'cancel' },
+        { 
+          text: detalle.accion, 
+          onPress: () => {
+            if (actividad.tipo === 'proveedor' && navigation) {
+              navigation.navigate('Funciones');
+            } else if (actividad.tipo === 'pago' && navigation) {
+              navigation.navigate('Herramientas');
+            } else if (actividad.tipo === 'promocion' && navigation) {
+              navigation.navigate('Promociones');
+            }
+          }
+        }
+      ]
+    );
+    
+    if (onPressActividad) {
+      onPressActividad(actividad);
+    }
   };
 
   const renderItem = ({ item, index }: { item: Actividad; index: number }) => (
     <TouchableOpacity
       style={styles.activityItem}
-      onPress={() => onPressActividad?.(item)}
+      onPress={() => handlePressActividad(item)}
       activeOpacity={0.7}
     >
       <View style={[styles.iconContainer, { backgroundColor: item.color + '20' }]}>
@@ -56,7 +142,7 @@ export const ActividadReciente: React.FC<Props> = ({ onPressActividad }) => {
       </View>
       <View style={styles.contentContainer}>
         <Text style={styles.titulo}>{item.titulo}</Text>
-        <Text style={styles.descripcion}>{item.descripcion}</Text>
+        <Text style={styles.descripcion} numberOfLines={1}>{item.descripcion}</Text>
         <Text style={styles.fecha}>{formatFecha(item.fecha)}</Text>
       </View>
       <Feather name="chevron-right" size={18} color={COLORS.textLight} />
@@ -75,6 +161,7 @@ export const ActividadReciente: React.FC<Props> = ({ onPressActividad }) => {
   if (actividades.length === 0) {
     return (
       <View style={styles.emptyContainer}>
+        <Feather name="activity" size={40} color={COLORS.textLight} />
         <Text style={styles.emptyText}>No hay actividad reciente</Text>
       </View>
     );
@@ -154,5 +241,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     color: COLORS.textLight,
+    marginTop: 10,
   },
 });

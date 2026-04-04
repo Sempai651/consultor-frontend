@@ -1,9 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
+import { registrarActividad } from '../services/actividad.service';
 
 const FuncionesScreen = ({ navigation }: any) => {
+  useEffect(() => {
+    registrarActividad('proveedor', 'Módulo de Proveedores', 'Visualizaste la lista de proveedores');
+  }, []);
+
   const funciones = [
     {
       id: 1,

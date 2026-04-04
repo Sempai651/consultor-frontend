@@ -1,9 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
+import { registrarActividad } from '../services/actividad.service';
 
 const HerramientasScreen = ({ navigation }: any) => {
+  useEffect(() => {
+    registrarActividad('pago', 'Módulo de Herramientas', 'Accediste a las herramientas financieras');
+  }, []);
+
   const herramientas = [
     {
       categoria: 'Financieras',

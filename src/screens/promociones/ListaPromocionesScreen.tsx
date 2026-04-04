@@ -13,10 +13,23 @@ import { Feather } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { promocionesService } from '../../services/promociones.service';
 import { Promocion } from '../../interfaces/promocion.interface';
+import { registrarActividad } from '../../services/actividad.service';
 
 export const ListaPromocionesScreen = ({ navigation }: any) => {
   const [promociones, setPromociones] = useState<Promocion[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    cargarPromociones();
+    registrarActividad('promocion', 'Módulo de Promociones', 'Visualizaste el listado de promociones');
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      cargarPromociones();
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const cargarPromociones = async () => {
     try {
@@ -30,27 +43,16 @@ export const ListaPromocionesScreen = ({ navigation }: any) => {
     }
   };
 
-  useEffect(() => {
-    cargarPromociones();
-  }, []);
-
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      cargarPromociones();
-    });
-    return unsubscribe;
-  }, [navigation]);
-
-  // Función de eliminar SIMPLE y DIRECTA
   const eliminarPromocion = (id: number, titulo: string) => {
     const confirmacion = window.confirm(`¿Estás seguro de eliminar "${titulo}"?`);
     if (!confirmacion) return;
     
-    // Eliminar directamente
+    alert('Eliminando promoción...');
+    
     promocionesService.delete(id)
       .then(() => {
         alert('✅ Promoción eliminada correctamente');
-        cargarPromociones(); // Recargar lista
+        cargarPromociones();
       })
       .catch((error) => {
         console.error('Error:', error);
@@ -60,6 +62,9 @@ export const ListaPromocionesScreen = ({ navigation }: any) => {
 
   const cambiarEstado = async (id: number, estadoActual: string) => {
     const nuevoEstado = estadoActual === 'activo' ? 'inactivo' : 'activo';
+    const confirmacion = window.confirm(`¿Cambiar estado a "${nuevoEstado}"?`);
+    if (!confirmacion) return;
+    
     try {
       await promocionesService.toggleEstado(id, nuevoEstado);
       alert(`✅ Promoción ${nuevoEstado === 'activo' ? 'activada' : 'desactivada'}`);

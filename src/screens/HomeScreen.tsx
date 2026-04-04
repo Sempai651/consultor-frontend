@@ -5,6 +5,7 @@ import { COLORS } from '../constants/colors';
 import { useAuth } from '../hooks/useAuth';
 import { PromocionesDestacadas } from '../components/PromocionesDestacadas';
 import { ActividadReciente } from '../components/ActividadReciente';
+import { registrarActividad } from '../services/actividad.service';
 
 const HomeScreen = ({ navigation }: any) => {
   const { signOut, user } = useAuth();
@@ -20,8 +21,27 @@ const HomeScreen = ({ navigation }: any) => {
   const handleLogout = async () => {
     const confirmacion = window.confirm("¿Desea cerrar sesión?");
     if (!confirmacion) return;
+    
+    await registrarActividad('logout', 'Cierre de sesión', 'Usuario cerró sesión');
+    
     localStorage.clear();
     window.location.reload();
+  };
+
+  const handleMenuPress = async (item: any) => {
+    if (item.id === 1) {
+      await registrarActividad('proveedor', 'Acceso a Funciones', 'Usuario accedió al módulo de funciones');
+    } else if (item.id === 2) {
+      await registrarActividad('pago', 'Acceso a Herramientas', 'Usuario accedió al módulo de herramientas');
+    } else if (item.id === 3) {
+      await registrarActividad('promocion', 'Acceso a Promociones', 'Usuario accedió al módulo de promociones');
+    }
+    
+    if (item.screen === 'Promociones') {
+      navigation.navigate('Promociones');
+    } else {
+      navigation.navigate(item.screen, item.params);
+    }
   };
 
   const getColor = (id: number) => {
@@ -70,13 +90,7 @@ const HomeScreen = ({ navigation }: any) => {
           <TouchableOpacity
             key={item.id}
             style={styles.menuCard}
-            onPress={() => {
-              if (item.screen === 'Promociones') {
-                navigation.navigate('Promociones');
-              } else {
-                navigation.navigate(item.screen, item.params);
-              }
-            }}
+            onPress={() => handleMenuPress(item)}
             activeOpacity={0.8}
           >
             <View style={[styles.menuGradient, { backgroundColor: getColor(item.id) }]}>
@@ -95,16 +109,9 @@ const HomeScreen = ({ navigation }: any) => {
         <View style={styles.activitySection}>
           <Text style={[styles.sectionTitle, { color: COLORS.text }]}>Actividad Reciente</Text>
           <ActividadReciente 
+            navigation={navigation}
             onPressActividad={(actividad) => {
-              if (actividad.tipo === 'proveedor') {
-                navigation.navigate('Funciones');
-              } else if (actividad.tipo === 'pago') {
-                navigation.navigate('Herramientas');
-              } else if (actividad.tipo === 'promocion') {
-                navigation.navigate('Promociones');
-              } else {
-                Alert.alert('Actividad', actividad.titulo);
-              }
+              console.log('Actividad presionada:', actividad);
             }}
           />
         </View>

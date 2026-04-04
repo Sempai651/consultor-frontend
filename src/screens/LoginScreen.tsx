@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   StatusBar,
@@ -15,48 +16,44 @@ import Button from '../components/Button';
 import { COLORS } from '../constants/colors';
 import { getCiError, getPasswordError } from '../utils/validators';
 import { useAuth } from '../hooks/useAuth';
+import { registrarActividad } from '../services/actividad.service';
 
 const LoginScreen = ({ navigation }: any) => {
   const [ci, setCi] = useState('');
   const [password, setPassword] = useState('');
   const [ciError, setCiError] = useState('');
-  const [passwordFormatError, setPasswordFormatError] = useState(''); // Error de formato
-  const [passwordCredentialError, setPasswordCredentialError] = useState(''); // Error de credenciales
+  const [passwordError, setPasswordError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
 
   const handleLogin = async () => {
-    // Limpiar error de credenciales anterior
-    setPasswordCredentialError('');
-
-    // 1. Validar formato de cédula
+    // Validar cédula
     const ciValidation = getCiError(ci);
     setCiError(ciValidation);
-    if (ciValidation) return;
+    if (ciValidation) {
+      Alert.alert('Error', ciValidation);
+      return;
+    }
 
-    // 2. Validar formato de contraseña (mayúscula, minúscula, etc.)
-    const passwordValidation = getPasswordError(password);
-    setPasswordFormatError(passwordValidation);
-    if (passwordValidation) return;
+    if (!password) {
+      setPasswordError('La contraseña es requerida');
+      return;
+    }
 
-    // 3. Si el formato es correcto, intentar login
     setLoading(true);
     try {
       await signIn(ci, password);
-      // Login exitoso
+      
+      // ✅ Registrar actividad de inicio de sesión
+      await registrarActividad('login', 'Inicio de sesión', `Usuario ${ci} inició sesión`);
+      
+      navigation.replace('Home');
     } catch (error: any) {
-      // ✅ Mostrar error de credenciales incorrectas
-      setPasswordCredentialError('❌ Contraseña incorrecta. Verifica tus datos.');
+      setPasswordError('❌ Contraseña incorrecta. Verifica tus datos.');
+      Alert.alert('Error', error.message || 'Credenciales inválidas');
     } finally {
       setLoading(false);
     }
-  };
-
-  // Mostrar el error que corresponda (formato tiene prioridad sobre credenciales)
-  const mostrarErrorPassword = () => {
-    if (passwordFormatError) return passwordFormatError;
-    if (passwordCredentialError) return passwordCredentialError;
-    return '';
   };
 
   return (
@@ -97,13 +94,12 @@ const LoginScreen = ({ navigation }: any) => {
               value={password}
               onChangeText={(text) => {
                 setPassword(text);
-                setPasswordFormatError(''); // Limpiar error de formato al escribir
-                setPasswordCredentialError(''); // Limpiar error de credenciales al escribir
+                setPasswordError('');
               }}
               placeholder="Mínimo 8 caracteres, mayúscula, minúscula, número y carácter especial"
               secureTextEntry
               iconName="lock"
-              error={mostrarErrorPassword()}
+              error={passwordError}
               showPasswordToggle={true}
             />
 
