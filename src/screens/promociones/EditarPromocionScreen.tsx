@@ -5,33 +5,52 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   StatusBar,
   TextInput,
   Image,
+  Alert,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { COLORS } from '../../constants/colors';
 import { CategoriaPicker } from '../../components/CategoriaPicker';
 import Button from '../../components/Button';
 import { promocionesService } from '../../services/promociones.service';
 import { Promocion } from '../../interfaces/promocion.interface';
+import { formatDateForInput } from '../../utils/dateValidators';
+import { useAuth } from '../../hooks/useAuth';
 
 export const EditarPromocionScreen = ({ navigation, route }: any) => {
   const { id } = route.params;
+  const { isAdmin } = useAuth();
+  
+  // VALIDACIÓN DE ROL - Solo administradores pueden editar
+  useEffect(() => {
+    if (!isAdmin) {
+      Alert.alert(
+        'Acceso Denegado',
+        'No tienes permisos para editar promociones. Solo los administradores pueden realizar esta acción.',
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
+    }
+  }, [isAdmin]);
+
   const [promocion, setPromocion] = useState<Promocion | null>(null);
   const [titulo, setTitulo] = useState('');
   const [categoria, setCategoria] = useState('Firmas');
   const [descripcion, setDescripcion] = useState('');
-  const [fechaVencimiento, setFechaVencimiento] = useState('');
+  const [fechaVencimiento, setFechaVencimiento] = useState(new Date());
   const [imagen, setImagen] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const [errors, setErrors] = useState({ titulo: '', descripcion: '', fechaVencimiento: '' });
 
   useEffect(() => {
-    cargarPromocion();
-  }, []);
+    if (isAdmin) {
+      cargarPromocion();
+    }
+  }, [isAdmin]);
 
   const cargarPromocion = async () => {
     try {
@@ -40,19 +59,12 @@ export const EditarPromocionScreen = ({ navigation, route }: any) => {
       setTitulo(data.titulo);
       setCategoria(data.categoria);
       setDescripcion(data.descripcion);
-      setFechaVencimiento(data.fecha_vencimiento.split('T')[0]);
+      setFechaVencimiento(new Date(data.fecha_vencimiento));
       setImagen(data.imagen);
     } catch (error) {
-      alert('No se pudo cargar la promoción');
+      Alert.alert('Error', 'No se pudo cargar la promoción');
       navigation.goBack();
     }
-  };
-
-  const validarFecha = (fecha: string): boolean => {
-    const regex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!regex.test(fecha)) return false;
-    const fechaDate = new Date(fecha);
-    return !isNaN(fechaDate.getTime());
   };
 
   const validarFormulario = (): boolean => {
@@ -67,13 +79,6 @@ export const EditarPromocionScreen = ({ navigation, route }: any) => {
       newErrors.descripcion = 'La descripción es requerida';
       isValid = false;
     }
-    if (!fechaVencimiento.trim()) {
-      newErrors.fechaVencimiento = 'La fecha de vencimiento es requerida';
-      isValid = false;
-    } else if (!validarFecha(fechaVencimiento)) {
-      newErrors.fechaVencimiento = 'Formato inválido. Usa YYYY-MM-DD';
-      isValid = false;
-    }
 
     setErrors(newErrors);
     return isValid;
@@ -82,7 +87,7 @@ export const EditarPromocionScreen = ({ navigation, route }: any) => {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      alert('Necesitamos acceso a tus imágenes');
+      Alert.alert('Permiso denegado', 'Necesitamos acceso a tus imágenes');
       return;
     }
 
@@ -93,36 +98,72 @@ export const EditarPromocionScreen = ({ navigation, route }: any) => {
       base64: true,
     });
 
-    if (!result.canceled) {
-      setImagen(result.assets[0].base64 || null);
+    if (!result.canceled && result.assets[0].base64) {
+      const base64String = result.assets[0].base64;
+      setImagen(base64String);
     }
+  };
+
+  const showDatePicker = () => {
+    setDatePickerVisible(true);
+  };
+
+  const hideDatePicker = () => {
+    setDatePickerVisible(false);
+  };
+
+  const handleConfirm = (selectedDate: Date) => {
+    hideDatePicker();
+    setFechaVencimiento(selectedDate);
   };
 
   const handleUpdate = async () => {
     if (!validarFormulario()) {
-      alert('❌ Por favor completa todos los campos correctamente');
+      Alert.alert('Error', 'Por favor completa todos los campos correctamente');
       return;
     }
 
     setLoading(true);
     try {
+      const anio = fechaVencimiento.getFullYear();
+      const mes = String(fechaVencimiento.getMonth() + 1).padStart(2, '0');
+      const dia = String(fechaVencimiento.getDate()).padStart(2, '0');
+      const fechaFormateada = `${anio}-${mes}-${dia}`;
+
       await promocionesService.update(id, {
         titulo: titulo.trim(),
         categoria: categoria as any,
         descripcion: descripcion.trim(),
-        fecha_vencimiento: fechaVencimiento.trim(),
+        fecha_vencimiento: fechaFormateada,
         imagen: imagen || '',
       });
       
-      alert(`✅ Promoción "${titulo}" actualizada exitosamente`);
+      Alert.alert('Éxito', `Promoción "${titulo}" actualizada exitosamente`);
       navigation.goBack();
       
     } catch (error: any) {
-      alert('❌ Error: No se pudo actualizar la promoción');
+      const mensaje = error?.response?.data?.msg || 'Error al actualizar la promoción';
+      Alert.alert('Error', mensaje);
     } finally {
       setLoading(false);
     }
   };
+
+  // Si no es admin, mostrar pantalla de acceso denegado
+  if (!isAdmin) {
+    return (
+      <View style={styles.deniedContainer}>
+        <Feather name="lock" size={60} color={COLORS.error} />
+        <Text style={styles.deniedTitle}>Acceso Denegado</Text>
+        <Text style={styles.deniedText}>
+          No tienes permisos para editar promociones. Esta acción solo está disponible para administradores.
+        </Text>
+        <TouchableOpacity style={styles.deniedButton} onPress={() => navigation.goBack()}>
+          <Text style={styles.deniedButtonText}>Volver</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   if (!promocion) {
     return (
@@ -169,14 +210,27 @@ export const EditarPromocionScreen = ({ navigation, route }: any) => {
         {errors.descripcion ? <Text style={styles.errorText}>{errors.descripcion}</Text> : null}
 
         <Text style={styles.label}>FECHA DE VENCIMIENTO</Text>
-        <TextInput
-          style={[styles.input, errors.fechaVencimiento ? styles.inputError : null]}
-          value={fechaVencimiento}
-          onChangeText={(text) => { setFechaVencimiento(text); setErrors({ ...errors, fechaVencimiento: '' }); }}
-          placeholder="YYYY-MM-DD"
-          placeholderTextColor={COLORS.textLight}
-        />
+        <TouchableOpacity 
+          style={[styles.dateButton, errors.fechaVencimiento ? styles.inputError : null]} 
+          onPress={showDatePicker}
+        >
+          <Feather name="calendar" size={20} color={COLORS.textLight} />
+          <Text style={styles.dateButtonText}>
+            {formatDateForInput(fechaVencimiento)}
+          </Text>
+        </TouchableOpacity>
         {errors.fechaVencimiento ? <Text style={styles.errorText}>{errors.fechaVencimiento}</Text> : null}
+
+        <DateTimePickerModal
+          isVisible={isDatePickerVisible}
+          mode="date"
+          onConfirm={handleConfirm}
+          onCancel={hideDatePicker}
+          date={fechaVencimiento}
+          locale="es_ES"
+          confirmTextIOS="Aceptar"
+          cancelTextIOS="Cancelar"
+        />
 
         <Text style={styles.label}>IMAGEN</Text>
         <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
@@ -208,9 +262,17 @@ const styles = StyleSheet.create({
   inputError: { borderColor: COLORS.error },
   errorText: { fontSize: 12, color: COLORS.error, marginTop: 4 },
   textArea: { minHeight: 100, textAlignVertical: 'top' },
+  dateButton: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, padding: 12, backgroundColor: COLORS.white },
+  dateButtonText: { fontSize: 16, color: COLORS.text, flex: 1 },
   imagePicker: { marginTop: 8, marginBottom: 20 },
   imagePlaceholder: { height: 150, backgroundColor: COLORS.surface, borderRadius: 12, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: COLORS.border, borderStyle: 'dashed' },
-  imagePreview: { width: '100%', height: 150, borderRadius: 12 },
+  imagePreview: { width: '100%', height: 150, borderRadius: 12, resizeMode: 'cover' },
   imageText: { marginTop: 8, color: COLORS.textLight },
   button: { marginTop: 20, marginBottom: 30 },
+  // Estilos para pantalla de acceso denegado
+  deniedContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: COLORS.background },
+  deniedTitle: { fontSize: 24, fontWeight: 'bold', color: COLORS.error, marginTop: 20, marginBottom: 10 },
+  deniedText: { fontSize: 16, color: COLORS.textSecondary, textAlign: 'center', marginBottom: 30 },
+  deniedButton: { backgroundColor: COLORS.primary, paddingHorizontal: 30, paddingVertical: 12, borderRadius: 10 },
+  deniedButtonText: { color: COLORS.white, fontWeight: 'bold', fontSize: 16 },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  TextInput,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Input from '../components/Input';
@@ -25,8 +26,20 @@ const LoginScreen = ({ navigation }: any) => {
   const [passwordError, setPasswordError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
+  
+  // Ref para evitar llamadas duplicadas
+  const isLoggingIn = useRef(false);
+  const actividadRegistrada = useRef(false);
+  
+  const passwordInputRef = useRef<TextInput>(null);
 
   const handleLogin = async () => {
+    // Evitar ejecuciones múltiples mientras ya se está procesando
+    if (isLoggingIn.current) {
+      console.log('⏳ Ya hay un inicio de sesión en proceso');
+      return;
+    }
+
     // Validar cédula
     const ciValidation = getCiError(ci);
     setCiError(ciValidation);
@@ -40,19 +53,32 @@ const LoginScreen = ({ navigation }: any) => {
       return;
     }
 
+    isLoggingIn.current = true;
     setLoading(true);
+    
     try {
       await signIn(ci, password);
       
-      // ✅ Registrar actividad de inicio de sesión
-      await registrarActividad('login', 'Inicio de sesión', `Usuario ${ci} inició sesión`);
+      // ✅ Registrar actividad SOLO UNA VEZ usando useRef
+      if (!actividadRegistrada.current) {
+        console.log('📝 Registrando actividad de inicio de sesión');
+        await registrarActividad('login', 'Inicio de sesión', `Usuario ${ci} inició sesión`);
+        actividadRegistrada.current = true;
+      }
       
       navigation.replace('Home');
     } catch (error: any) {
       setPasswordError('❌ Contraseña incorrecta. Verifica tus datos.');
       Alert.alert('Error', error.message || 'Credenciales inválidas');
     } finally {
+      isLoggingIn.current = false;
       setLoading(false);
+    }
+  };
+
+  const handleKeyPress = (event: any) => {
+    if (event.key === 'Enter') {
+      handleLogin();
     }
   };
 
@@ -87,9 +113,12 @@ const LoginScreen = ({ navigation }: any) => {
               iconName="user"
               error={ciError}
               maxLength={10}
+              returnKeyType="next"
+              onSubmitEditing={() => passwordInputRef.current?.focus()}
             />
 
             <Input
+              ref={passwordInputRef}
               label="CONTRASEÑA"
               value={password}
               onChangeText={(text) => {
@@ -101,6 +130,9 @@ const LoginScreen = ({ navigation }: any) => {
               iconName="lock"
               error={passwordError}
               showPasswordToggle={true}
+              returnKeyType="done"
+              onSubmitEditing={handleLogin}
+              onKeyPress={handleKeyPress}
             />
 
             <TouchableOpacity style={styles.forgotContainer} onPress={() => navigation.navigate('RecuperarClave')}>

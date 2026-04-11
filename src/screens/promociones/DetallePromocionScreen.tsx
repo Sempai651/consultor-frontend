@@ -14,40 +14,47 @@ import { COLORS } from '../../constants/colors';
 import Button from '../../components/Button';
 import { promocionesService } from '../../services/promociones.service';
 import { Promocion } from '../../interfaces/promocion.interface';
+import { useAuth } from '../../hooks/useAuth';
 
 export const DetallePromocionScreen = ({ navigation, route }: any) => {
+  // Obtenemos el ID de la promocion desde los parametros de navegacion
   const { id } = route.params;
+  const { isAdmin } = useAuth();
   const [promocion, setPromocion] = useState<Promocion | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Al cargar la pantalla, traemos los datos de la promocion
   useEffect(() => {
     cargarPromocion();
   }, []);
 
+  // Funcion para obtener los datos de la promocion desde el backend
   const cargarPromocion = async () => {
     try {
       const data = await promocionesService.getById(id);
       setPromocion(data);
     } catch (error) {
       Alert.alert('Error', 'No se pudo cargar la promoción');
-      navigation.goBack();
+      navigation.goBack(); // Si hay error, volvemos a la lista
     } finally {
       setLoading(false);
     }
   };
 
+  // Cambia el estado de la promocion (activo/inactivo) - SOLO ADMIN
   const toggleEstado = async () => {
     if (!promocion) return;
     const nuevoEstado = promocion.estado === 'activo' ? 'inactivo' : 'activo';
     try {
       await promocionesService.toggleEstado(id, nuevoEstado);
-      setPromocion({ ...promocion, estado: nuevoEstado });
+      setPromocion({ ...promocion, estado: nuevoEstado }); // Actualiza el estado local
       Alert.alert('Éxito', `Promoción ${nuevoEstado === 'activo' ? 'activada' : 'desactivada'}`);
     } catch (error) {
       Alert.alert('Error', 'No se pudo cambiar el estado');
     }
   };
 
+  // Mientras carga, mostramos un indicador
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -61,17 +68,25 @@ export const DetallePromocionScreen = ({ navigation, route }: any) => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
+      
+      {/* Header con boton de regreso y edicion (solo admin ve el botón editar) */}
       <View style={[styles.header, { backgroundColor: COLORS.primary }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Feather name="arrow-left" size={24} color="#FFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Detalle Promoción</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('EditarPromocion', { id: promocion.id })}>
-          <Feather name="edit-2" size={24} color="#FFF" />
-        </TouchableOpacity>
+        {isAdmin ? (
+          <TouchableOpacity onPress={() => navigation.navigate('EditarPromocion', { id: promocion.id })}>
+            <Feather name="edit-2" size={24} color="#FFF" />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 40 }} />
+        )}
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
+        
+        {/* Muestra la imagen de la promocion */}
         {promocion.imagen ? (
           <Image source={{ uri: `data:image/jpeg;base64,${promocion.imagen}` }} style={styles.image} />
         ) : (
@@ -81,34 +96,48 @@ export const DetallePromocionScreen = ({ navigation, route }: any) => {
           </View>
         )}
 
+        {/* Tarjeta con la informacion de la promocion */}
         <View style={styles.infoCard}>
           <Text style={styles.titulo}>{promocion.titulo}</Text>
-          <View style={[styles.estadoBadge, promocion.estado === 'activo' ? styles.activo : styles.inactivo]}>
-            <Text style={styles.estadoText}>{promocion.estado === 'activo' ? 'ACTIVO' : 'INACTIVO'}</Text>
-          </View>
+          
+          {/* Badge de estado (activo/inactivo) - SOLO PARA ADMIN */}
+          {isAdmin && (
+            <View style={[styles.estadoBadge, promocion.estado === 'activo' ? styles.activo : styles.inactivo]}>
+              <Text style={styles.estadoText}>{promocion.estado === 'activo' ? 'ACTIVO' : 'INACTIVO'}</Text>
+            </View>
+          )}
+          
           <Text style={styles.categoria}>{promocion.categoria}</Text>
           <Text style={styles.descripcion}>{promocion.descripcion}</Text>
+          
+          {/* Fecha de creacion */}
           <View style={styles.fechaContainer}>
             <Feather name="calendar" size={16} color={COLORS.textLight} />
             <Text style={styles.fecha}>Creado: {new Date(promocion.fecha_creacion).toLocaleDateString()}</Text>
           </View>
+          
+          {/* Fecha de vencimiento */}
           <View style={styles.fechaContainer}>
             <Feather name="clock" size={16} color={COLORS.textLight} />
             <Text style={styles.fecha}>Vence: {new Date(promocion.fecha_vencimiento).toLocaleDateString()}</Text>
           </View>
         </View>
 
-        <Button
-          title={promocion.estado === 'activo' ? 'DESACTIVAR PROMOCIÓN' : 'ACTIVAR PROMOCIÓN'}
-          onPress={toggleEstado}
-          variant={promocion.estado === 'activo' ? 'secondary' : 'primary'}
-          style={styles.button}
-        />
+        {/* Boton para activar/desactivar la promocion - SOLO PARA ADMIN */}
+        {isAdmin && (
+          <Button
+            title={promocion.estado === 'activo' ? 'DESACTIVAR PROMOCIÓN' : 'ACTIVAR PROMOCIÓN'}
+            onPress={toggleEstado}
+            variant={promocion.estado === 'activo' ? 'secondary' : 'primary'}
+            style={styles.button}
+          />
+        )}
       </ScrollView>
     </View>
   );
 };
 
+// Estilos del componente
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },

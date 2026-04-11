@@ -22,14 +22,43 @@ export const promocionesService = {
     return response.data.data || response.data;
   },
 
-  async delete(id: number): Promise<void> {
-    console.log('🗑️ Eliminando promoción ID:', id);
-    await api.delete(`/promociones/${id}`);
-    console.log('✅ Eliminación exitosa');
-  },
-
+  async delete(id: number): Promise<any> {
+  console.log('🗑️ Servicio delete llamado con ID:', id);
+  const response = await api.delete(`/promociones/${id}`);
+  console.log('✅ Respuesta del servicio:', response.data);
+  return response.data;
+},
   async toggleEstado(id: number, estado: 'activo' | 'inactivo'): Promise<Promocion> {
     const response = await api.patch(`/promociones/${id}/estado`, { estado });
+    return response.data.data || response.data;
+  },
+
+  // ========== MÉTODOS PARA FILTROS ==========
+
+  async filtrar(params: {
+    categoria?: string;
+    estado?: string;
+    fechaInicio?: string;
+    fechaFin?: string;
+  }): Promise<Promocion[]> {
+    const response = await api.get('/promociones/filtros/aplicar', { params });
+    return response.data.data || response.data;
+  },
+
+  async buscarPorTitulo(termino: string): Promise<Promocion[]> {
+    const response = await api.get('/promociones/filtros/buscar', { 
+      params: { q: termino } 
+    });
+    return response.data.data || response.data;
+  },
+
+  async getActivas(): Promise<Promocion[]> {
+    const response = await api.get('/promociones/estado/activas');
+    return response.data.data || response.data;
+  },
+
+  async getVencidas(): Promise<Promocion[]> {
+    const response = await api.get('/promociones/estado/vencidas');
     return response.data.data || response.data;
   },
 };

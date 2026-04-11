@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { forwardRef, useState } from 'react';
 import { View, TextInput, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
@@ -14,9 +14,12 @@ interface InputProps {
   error?: string;
   maxLength?: number;
   showPasswordToggle?: boolean;
+  returnKeyType?: 'done' | 'next' | 'go' | 'search' | 'send';
+  onSubmitEditing?: () => void;
+  onKeyPress?: (event: any) => void;
 }
 
-const Input: React.FC<InputProps> = ({ 
+const Input = forwardRef<TextInput, InputProps>(({ 
   label, 
   value, 
   onChangeText, 
@@ -26,8 +29,11 @@ const Input: React.FC<InputProps> = ({
   iconName, 
   error,
   maxLength,
-  showPasswordToggle = false
-}) => {
+  showPasswordToggle = false,
+  returnKeyType = 'done',
+  onSubmitEditing,
+  onKeyPress,
+}, ref) => {
   const [showPassword, setShowPassword] = useState(false);
 
   // Si es campo con toggle, mostramos texto normal cuando showPassword es true
@@ -44,6 +50,7 @@ const Input: React.FC<InputProps> = ({
           <Feather name={iconName as any} size={20} color={COLORS.textLight} style={styles.icon} />
         )}
         <TextInput
+          ref={ref}
           style={[styles.input, iconName ? styles.inputWithIcon : null]}
           value={value}
           onChangeText={onChangeText}
@@ -52,11 +59,12 @@ const Input: React.FC<InputProps> = ({
           secureTextEntry={isSecure}
           keyboardType={keyboardType}
           maxLength={maxLength}
+          returnKeyType={returnKeyType}
+          onSubmitEditing={onSubmitEditing}
+          onKeyPress={onKeyPress}
         />
         {showPasswordToggle && (
           <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-            {/* Ojo cerrado cuando está oculta (showPassword = false) */}
-            {/* Ojo abierto cuando está visible (showPassword = true) */}
             <Feather 
               name={showPassword ? 'eye' : 'eye-off'} 
               size={20} 
@@ -68,7 +76,7 @@ const Input: React.FC<InputProps> = ({
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: { marginBottom: 20, width: '100%' },

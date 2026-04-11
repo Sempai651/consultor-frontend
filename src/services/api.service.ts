@@ -15,6 +15,7 @@ const api = axios.create({
 api.interceptors.request.use(async (config) => {
   try {
     const token = await AsyncStorage.getItem('@Auth:token')
+    console.log('🔑 Token enviado a:', config.url, token ? '✅ Token presente' : '❌ Sin token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -28,8 +29,8 @@ api.interceptors.request.use(async (config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    console.error('❌ Error en petición:', error?.response?.status, error?.config?.url)
     if (error.response?.status === 401) {
-      // Token expirado o inválido — limpiar sesión
       await AsyncStorage.removeItem('@Auth:token')
       await AsyncStorage.removeItem('@Auth:user')
     }

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, TextInput, Alert } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, TextInput } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { useAuth } from '../hooks/useAuth';
@@ -8,15 +9,24 @@ import { ActividadReciente } from '../components/ActividadReciente';
 import { registrarActividad } from '../services/actividad.service';
 
 const HomeScreen = ({ navigation }: any) => {
-  const { signOut, user } = useAuth();
+  const { signOut, user, isAdmin } = useAuth();
   const [busqueda, setBusqueda] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      setRefreshKey(prev => prev + 1);
+    }, [])
+  );
 
   const menuItems = [
     { id: 1, title: 'Funciones', icon: 'settings', description: 'Gestión de proveedores y obligaciones', screen: 'MainTabs', params: { screen: 'Funciones' } },
     { id: 2, title: 'Herramientas', icon: 'tool', description: 'Calculadoras y utilidades empresariales', screen: 'MainTabs', params: { screen: 'Herramientas' } },
-    { id: 3, title: 'Promociones', icon: 'tag', description: 'Gestiona tus promociones y ofertas', screen: 'Promociones' },
+    { id: 3, title: 'Promociones', icon: 'tag', description: 'Gestiona tus promociones y ofertas', screen: 'Promociones', adminOnly: true },
     { id: 4, title: 'Contáctanos', icon: 'phone', description: 'Soporte y atención al cliente', screen: 'MainTabs', params: { screen: 'Contacto' } },
   ];
+
+  const menuItemsFiltrados = menuItems.filter(item => !item.adminOnly || isAdmin);
 
   const handleLogout = async () => {
     const confirmacion = window.confirm("¿Desea cerrar sesión?");
@@ -51,6 +61,9 @@ const HomeScreen = ({ navigation }: any) => {
     return '#0F973D';
   };
 
+  const rolUsuario = user?.rol === 'admin' ? 'Administrador' : 'Cliente';
+  const rolColor = user?.rol === 'admin' ? '#F59E0B' : '#0F973D';
+
   return (
     <View style={[styles.container, { backgroundColor: COLORS.background }]}>
       <StatusBar barStyle="light-content" />
@@ -60,6 +73,9 @@ const HomeScreen = ({ navigation }: any) => {
           <View>
             <Text style={styles.greeting}>¡Hola, {user?.nombre || 'Usuario'}! 🎉</Text>
             <Text style={styles.location}>Ecuador</Text>
+            <View style={[styles.rolBadge, { backgroundColor: rolColor }]}>
+              <Text style={styles.rolText}>{rolUsuario}</Text>
+            </View>
           </View>
           <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
             <Feather name="log-out" size={24} color="#FFFFFF" />
@@ -80,13 +96,16 @@ const HomeScreen = ({ navigation }: any) => {
 
       <ScrollView contentContainerStyle={styles.content}>
         <PromocionesDestacadas 
+          key={refreshKey}
           busqueda={busqueda}
-          onPressPromocion={(id) => navigation.navigate('DetallePromocion', { id })} 
+          navigation={navigation}
+          onPressPromocion={(id) => navigation.navigate('DetallePromocion', { id })}
+          onEditPromocion={(id) => navigation.navigate('EditarPromocion', { id })}
         />
 
         <Text style={[styles.sectionTitle, { color: COLORS.text }]}>Accesos Rápidos</Text>
 
-        {menuItems.map((item) => (
+        {menuItemsFiltrados.map((item) => (
           <TouchableOpacity
             key={item.id}
             style={styles.menuCard}
@@ -107,7 +126,6 @@ const HomeScreen = ({ navigation }: any) => {
         ))}
 
         <View style={styles.activitySection}>
-          <Text style={[styles.sectionTitle, { color: COLORS.text }]}>Actividad Reciente</Text>
           <ActividadReciente 
             navigation={navigation}
             onPressActividad={(actividad) => {
@@ -123,9 +141,11 @@ const HomeScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { paddingTop: 50, paddingHorizontal: 20, paddingBottom: 30, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
-  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
   greeting: { fontSize: 20, fontWeight: 'bold', color: '#FFFFFF' },
   location: { fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 4 },
+  rolBadge: { marginTop: 8, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, alignSelf: 'flex-start' },
+  rolText: { fontSize: 12, color: '#FFFFFF', fontWeight: 'bold' },
   logoutButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
   searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12, paddingHorizontal: 12, marginBottom: 20 },
   searchIcon: { marginRight: 8 },

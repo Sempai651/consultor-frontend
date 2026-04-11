@@ -1,76 +1,93 @@
-import React, { createContext, useState, useContext, useEffect } from 'react'
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import { authService } from '../services/auth.service'
-
-// Interfaces
-interface Usuario {
-  id: number
-  nombre: string
-  email: string
-  cedula: string    
-}
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authService } from '../services/auth.service';
+import { Usuario } from '../interfaces/usuario.interface';
 
 interface AuthContextData {
-  user: Usuario | null
-  loading: boolean
-  signIn: (cedula: string, password: string) => Promise<void>
-  signOut: () => Promise<void>
+  user: Usuario | null;
+  loading: boolean;
+  signIn: (cedula: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+  isAdmin: boolean;
 }
 
-export const AuthContext = createContext<AuthContextData>({} as AuthContextData)
+export const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<Usuario | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<Usuario | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Al arrancar la app verifica si hay sesión guardada
   useEffect(() => {
-    loadStoredData()
-  }, [])
+    loadStoredData();
+  }, []);
 
   async function loadStoredData() {
     try {
-      const storedUser = await AsyncStorage.getItem('@Auth:user')
-      const storedToken = await AsyncStorage.getItem('@Auth:token')
+      const storedUser = await AsyncStorage.getItem('@Auth:user');
+      const storedToken = await AsyncStorage.getItem('@Auth:token');
+      
       if (storedUser && storedToken) {
-        setUser(JSON.parse(storedUser))
+        const parsedUser = JSON.parse(storedUser);
+        // Si el usuario no tiene rol, asignar 'cliente' por defecto
+        if (!parsedUser.rol) {
+          parsedUser.rol = 'cliente';
+        }
+        setUser(parsedUser);
       }
     } catch (error) {
-      console.error('Error cargando sesión:', error)
+      console.error('Error cargando sesión:', error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
-  //  LOGIN 
   async function signIn(cedula: string, password: string) {
-    const response = await authService.login({ cedula, password })
+    const response = await authService.login({ cedula, password });
 
     if (response.success) {
-      const { token, usuario } = response.data
-      await AsyncStorage.setItem('@Auth:token', token)
-      await AsyncStorage.setItem('@Auth:user', JSON.stringify(usuario))
-      setUser(usuario)
+      const { token, usuario } = response.data;
+      
+      // Asegurar que el usuario tenga rol (por si el backend no lo envía)
+      const usuarioConRol = {
+        ...usuario,
+        rol: usuario.rol || 'cliente'
+      };
+      
+      await AsyncStorage.setItem('@Auth:token', token);
+      await AsyncStorage.setItem('@Auth:user', JSON.stringify(usuarioConRol));
+      setUser(usuarioConRol);
     } else {
-      throw new Error(response.message)
+      throw new Error(response.message);
     }
   }
 
-  //  LOGOUT
   async function signOut() {
-    await authService.logout()
-    setUser(null)
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Error en logout:', error);
+    } finally {
+      await AsyncStorage.removeItem('@Auth:token');
+      await AsyncStorage.removeItem('@Auth:user');
+      setUser(null);
+    }
   }
 
+  // Verificar si el usuario es administrador
+  const isAdmin = user?.rol === 'admin';
+
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signOut, isAdmin }}>
       {children}
     </AuthContext.Provider>
-  )
-}
+  );
+};
 
+// Hook personalizado para usar el contexto
 export const useAuth = () => {
-  const context = useContext(AuthContext)
-  if (!context) throw new Error('useAuth must be used within an AuthProvider')
-  return context
-}
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
