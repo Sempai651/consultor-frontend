@@ -23,14 +23,23 @@ export const promocionesService = {
   },
 
   async delete(id: number): Promise<any> {
-  console.log('🗑️ Servicio delete llamado con ID:', id);
-  const response = await api.delete(`/promociones/${id}`);
-  console.log('✅ Respuesta del servicio:', response.data);
-  return response.data;
-},
+    console.log('🗑️ Servicio delete llamado con ID:', id);
+    const response = await api.delete(`/promociones/${id}`);
+    console.log('✅ Respuesta del servicio delete:', response.data);
+    return response.data;
+  },
+
+  // ✅ TOGGLE ESTADO CORREGIDO Y FUNCIONAL
   async toggleEstado(id: number, estado: 'activo' | 'inactivo'): Promise<Promocion> {
-    const response = await api.patch(`/promociones/${id}/estado`, { estado });
-    return response.data.data || response.data;
+    console.log('🔄 Servicio toggleEstado - ID:', id, 'Nuevo estado:', estado);
+    try {
+      const response = await api.patch(`/promociones/${id}/estado`, { estado });
+      console.log('✅ Respuesta del servicio toggleEstado:', response.data);
+      return response.data.data || response.data;
+    } catch (error: any) {
+      console.error('❌ Error en toggleEstado:', error?.response?.data || error);
+      throw error;
+    }
   },
 
   // ========== MÉTODOS PARA FILTROS ==========

@@ -30,6 +30,7 @@ const PromocionesScreen = ({ navigation }: any) => {
   const estadosFiltro = [
     { label: 'Todas', value: 'todas' },
     { label: 'Activas', value: 'activas' },
+    { label: 'Inactivas', value: 'inactivas' },
     { label: 'Caducadas', value: 'vencidas' },
   ];
 
@@ -67,7 +68,9 @@ const PromocionesScreen = ({ navigation }: any) => {
     }
     
     if (filtroEstado === 'activas') {
-      filtradas = filtradas.filter(p => !isVencida(p.fecha_vencimiento));
+      filtradas = filtradas.filter(p => p.estado === 'activo' && !isVencida(p.fecha_vencimiento));
+    } else if (filtroEstado === 'inactivas') {
+      filtradas = filtradas.filter(p => p.estado === 'inactivo');
     } else if (filtroEstado === 'vencidas') {
       filtradas = filtradas.filter(p => isVencida(p.fecha_vencimiento));
     }
@@ -102,6 +105,32 @@ const PromocionesScreen = ({ navigation }: any) => {
     );
   };
 
+  // ✅ TOGGLE ESTADO - Activar/Desactivar promoción
+  const handleToggleEstado = (promo: Promocion) => {
+    const nuevoEstado = promo.estado === 'activo' ? 'inactivo' : 'activo';
+    const mensaje = nuevoEstado === 'activo' ? 'activar' : 'desactivar';
+    
+    Alert.alert(
+      'Cambiar Estado',
+      `¿Estás seguro de ${mensaje} la promoción "${promo.titulo}"?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Confirmar',
+          onPress: async () => {
+            try {
+              await promocionesService.toggleEstado(promo.id, nuevoEstado);
+              Alert.alert('Éxito', `Promoción ${mensaje}da correctamente`);
+              await cargarPromociones();
+            } catch (error: any) {
+              Alert.alert('Error', error?.response?.data?.msg || 'No se pudo cambiar el estado');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const getCategoriaColor = (categoria: string): string => {
     switch (categoria) {
       case 'Firmas': return '#2A4494';
@@ -114,12 +143,13 @@ const PromocionesScreen = ({ navigation }: any) => {
   const renderPromocion = ({ item }: { item: Promocion }) => {
     const estadoInfo = getEstadoInfo(item.fecha_vencimiento);
     const vencida = isVencida(item.fecha_vencimiento);
+    const inactiva = item.estado === 'inactivo';
     
     return (
-      <View style={[styles.card, vencida && styles.cardVencida]}>
+      <View style={[styles.card, (vencida || inactiva) && styles.cardVencida]}>
         <View style={styles.cardContent}>
           <View style={styles.cardHeader}>
-            <Text style={[styles.cardTitle, vencida && styles.textVencida]}>{item.titulo}</Text>
+            <Text style={[styles.cardTitle, (vencida || inactiva) && styles.textVencida]}>{item.titulo}</Text>
             <View style={[styles.categoriaBadge, { backgroundColor: getCategoriaColor(item.categoria) }]}>
               <Text style={styles.categoriaBadgeText}>{item.categoria}</Text>
             </View>
@@ -129,13 +159,18 @@ const PromocionesScreen = ({ navigation }: any) => {
             <View style={[styles.estadoBadge, { backgroundColor: estadoInfo.color }]}>
               <Text style={styles.estadoText}>{estadoInfo.texto}</Text>
             </View>
+            {inactiva && (
+              <View style={[styles.estadoBadge, { backgroundColor: '#9CA3AF', marginLeft: 8 }]}>
+                <Text style={styles.estadoText}>Inactivo</Text>
+              </View>
+            )}
           </View>
           
-          <Text style={[styles.cardDescription, vencida && styles.textVencida]}>{item.descripcion}</Text>
+          <Text style={[styles.cardDescription, (vencida || inactiva) && styles.textVencida]}>{item.descripcion}</Text>
           
           <View style={styles.cardFooter}>
-            <Feather name="calendar" size={14} color={vencida ? COLORS.error : COLORS.textLight} />
-            <Text style={[styles.cardFecha, vencida && styles.textVencida]}>
+            <Feather name="calendar" size={14} color={(vencida || inactiva) ? COLORS.error : COLORS.textLight} />
+            <Text style={[styles.cardFecha, (vencida || inactiva) && styles.textVencida]}>
               Vence: {formatDate(item.fecha_vencimiento)}
             </Text>
           </View>
@@ -143,6 +178,16 @@ const PromocionesScreen = ({ navigation }: any) => {
         
         {isAdmin && (
           <View style={styles.buttonRow}>
+            {/* Botón Activar/Desactivar */}
+            <TouchableOpacity 
+              style={[styles.estadoButton, { backgroundColor: item.estado === 'activo' ? '#F59E0B' : '#0F973D' }]}
+              onPress={() => handleToggleEstado(item)}
+            >
+              <Feather name="power" size={16} color={COLORS.white} />
+              <Text style={styles.buttonText}>
+                {item.estado === 'activo' ? 'Desactivar' : 'Activar'}
+              </Text>
+            </TouchableOpacity>
             <TouchableOpacity style={styles.editButton} onPress={() => handleEdit(item.id)}>
               <Feather name="edit-2" size={18} color={COLORS.white} />
               <Text style={styles.buttonText}>Editar</Text>
@@ -284,16 +329,43 @@ const styles = StyleSheet.create({
   textVencida: { color: COLORS.textLight, textDecorationLine: 'line-through' },
   categoriaBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
   categoriaBadgeText: { fontSize: 10, color: COLORS.white, fontWeight: 'bold' },
-  estadoContainer: { marginBottom: 8 },
+  estadoContainer: { flexDirection: 'row', marginBottom: 8 },
   estadoBadge: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
   estadoText: { fontSize: 10, color: COLORS.white, fontWeight: 'bold' },
   cardDescription: { fontSize: 14, color: COLORS.textSecondary, marginBottom: 8, lineHeight: 20 },
   cardFooter: { flexDirection: 'row', alignItems: 'center' },
   cardFecha: { fontSize: 12, color: COLORS.textLight, marginLeft: 6 },
-  buttonRow: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: COLORS.border },
-  editButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, backgroundColor: COLORS.primary, gap: 8 },
-  deleteButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, backgroundColor: COLORS.error, gap: 8 },
-  buttonText: { color: COLORS.white, fontWeight: '600', fontSize: 14 },
+  buttonRow: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: COLORS.border, gap: 4 },
+  estadoButton: { 
+    flex: 1, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    paddingVertical: 12, 
+    gap: 6,
+    borderRadius: 8,
+  },
+  editButton: { 
+    flex: 1, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    paddingVertical: 12, 
+    backgroundColor: COLORS.primary, 
+    gap: 6,
+    borderRadius: 8,
+  },
+  deleteButton: { 
+    flex: 1, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    paddingVertical: 12, 
+    backgroundColor: COLORS.error, 
+    gap: 6,
+    borderRadius: 8,
+  },
+  buttonText: { color: COLORS.white, fontWeight: '600', fontSize: 13 },
   loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyContainer: { alignItems: 'center', paddingVertical: 60 },
   emptyText: { fontSize: 16, color: COLORS.textLight, marginTop: 16, marginBottom: 20 },

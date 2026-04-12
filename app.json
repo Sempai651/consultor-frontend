@@ -31,10 +31,18 @@
               "scheme": "consultor"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
-    "web": {}
+    "web": {},
+    "extra": {
+      "eas": {
+        "projectId": "98d36fd0-6629-4360-a7dd-21814d4a5231"
+      }
+    }
   }
 }

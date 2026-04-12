@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Modal,
   FlatList,
+  Alert,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
@@ -66,31 +67,48 @@ export const PromocionesDestacadas: React.FC<PromocionesDestacadasProps> = ({
     }, [])
   );
 
+  // ✅ CORREGIDO: usar Alert.alert en lugar de window.confirm y alert()
   const confirmarEliminacion = (promo: Promocion) => {
     if (!isAdmin) {
-      alert('Acceso denegado. Solo los administradores pueden eliminar promociones.');
+      Alert.alert('Acceso Denegado', 'Solo los administradores pueden eliminar promociones.');
       return;
     }
     
-    const confirmar = window.confirm(`¿Estás seguro de eliminar "${promo.titulo}"?`);
-    if (confirmar) {
-      eliminarPromocion(promo.id);
-    }
+    Alert.alert(
+      'Eliminar Promoción',
+      `¿Estás seguro de eliminar "${promo.titulo}"?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await promocionesService.delete(promo.id);
+              Alert.alert('Éxito', 'Promoción eliminada correctamente');
+              await cargarPromociones();
+            } catch (error: any) {
+              Alert.alert('Error', error?.response?.data?.msg || 'No se pudo eliminar');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const eliminarPromocion = async (id: number) => {
     try {
       await promocionesService.delete(id);
-      alert('Promoción eliminada correctamente');
+      Alert.alert('Éxito', 'Promoción eliminada correctamente');
       await cargarPromociones();
     } catch (error: any) {
-      alert(error?.response?.data?.msg || 'No se pudo eliminar');
+      Alert.alert('Error', error?.response?.data?.msg || 'No se pudo eliminar');
     }
   };
 
   const handleEdit = (id: number) => {
     if (!isAdmin) {
-      alert('Acceso denegado. Solo los administradores pueden editar promociones.');
+      Alert.alert('Acceso Denegado', 'Solo los administradores pueden editar promociones.');
       return;
     }
     onEditPromocion?.(id);

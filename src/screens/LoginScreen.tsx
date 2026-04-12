@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   Alert,
   KeyboardAvoidingView,
@@ -27,20 +26,13 @@ const LoginScreen = ({ navigation }: any) => {
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
   
-  // Ref para evitar llamadas duplicadas
   const isLoggingIn = useRef(false);
   const actividadRegistrada = useRef(false);
-  
   const passwordInputRef = useRef<TextInput>(null);
 
   const handleLogin = async () => {
-    // Evitar ejecuciones múltiples mientras ya se está procesando
-    if (isLoggingIn.current) {
-      console.log('⏳ Ya hay un inicio de sesión en proceso');
-      return;
-    }
+    if (isLoggingIn.current) return;
 
-    // Validar cédula
     const ciValidation = getCiError(ci);
     setCiError(ciValidation);
     if (ciValidation) {
@@ -59,14 +51,12 @@ const LoginScreen = ({ navigation }: any) => {
     try {
       await signIn(ci, password);
       
-      // ✅ Registrar actividad SOLO UNA VEZ usando useRef
       if (!actividadRegistrada.current) {
-        console.log('📝 Registrando actividad de inicio de sesión');
         await registrarActividad('login', 'Inicio de sesión', `Usuario ${ci} inició sesión`);
         actividadRegistrada.current = true;
       }
       
-      navigation.replace('Home');
+      navigation.replace('MainTabs');
     } catch (error: any) {
       setPasswordError('❌ Contraseña incorrecta. Verifica tus datos.');
       Alert.alert('Error', error.message || 'Credenciales inválidas');
@@ -86,7 +76,9 @@ const LoginScreen = ({ navigation }: any) => {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={[styles.container, { backgroundColor: COLORS.primary }]}>
         <StatusBar barStyle="light-content" />
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
+        
+        {/* ELIMINÉ EL SCROLLVIEW PARA QUE NO SE MUEVA */}
+        <View style={styles.contentContainer}>
           
           <View style={styles.logoContainer}>
             <View style={[styles.logoCircle, { backgroundColor: COLORS.accent }]}>
@@ -166,7 +158,7 @@ const LoginScreen = ({ navigation }: any) => {
               </TouchableOpacity>
             </View>
           </View>
-        </ScrollView>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
@@ -174,7 +166,12 @@ const LoginScreen = ({ navigation }: any) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContainer: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 40 },
+  contentContainer: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+  },
   logoContainer: { alignItems: 'center', marginBottom: 30 },
   logoCircle: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
   brandName: { fontSize: 32, fontWeight: 'bold', color: '#FFFFFF', letterSpacing: 2, marginBottom: 5 },

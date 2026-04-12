@@ -43,35 +43,55 @@ export const ListaPromocionesScreen = ({ navigation }: any) => {
     }
   };
 
+  // ✅ ELIMINAR PROMOCIÓN - CORREGIDO para móvil
   const eliminarPromocion = (id: number, titulo: string) => {
-    const confirmacion = window.confirm(`¿Estás seguro de eliminar "${titulo}"?`);
-    if (!confirmacion) return;
-    
-    alert('Eliminando promoción...');
-    
-    promocionesService.delete(id)
-      .then(() => {
-        alert('✅ Promoción eliminada correctamente');
-        cargarPromociones();
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-        alert('❌ No se pudo eliminar la promoción');
-      });
+    Alert.alert(
+      'Eliminar Promoción',
+      `¿Estás seguro de eliminar "${titulo}"?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await promocionesService.delete(id);
+              Alert.alert('Éxito', 'Promoción eliminada correctamente');
+              cargarPromociones();
+            } catch (error) {
+              console.error('Error:', error);
+              Alert.alert('Error', 'No se pudo eliminar la promoción');
+            }
+          }
+        }
+      ]
+    );
   };
 
+  // ✅ CAMBIAR ESTADO - CORREGIDO para móvil
   const cambiarEstado = async (id: number, estadoActual: string) => {
     const nuevoEstado = estadoActual === 'activo' ? 'inactivo' : 'activo';
-    const confirmacion = window.confirm(`¿Cambiar estado a "${nuevoEstado}"?`);
-    if (!confirmacion) return;
+    const mensaje = nuevoEstado === 'activo' ? 'activar' : 'desactivar';
     
-    try {
-      await promocionesService.toggleEstado(id, nuevoEstado);
-      alert(`✅ Promoción ${nuevoEstado === 'activo' ? 'activada' : 'desactivada'}`);
-      cargarPromociones();
-    } catch (error) {
-      alert('❌ No se pudo cambiar el estado');
-    }
+    Alert.alert(
+      'Cambiar Estado',
+      `¿Estás seguro de ${mensaje} esta promoción?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Confirmar',
+          onPress: async () => {
+            try {
+              await promocionesService.toggleEstado(id, nuevoEstado);
+              Alert.alert('Éxito', `Promoción ${mensaje}da correctamente`);
+              cargarPromociones();
+            } catch (error) {
+              Alert.alert('Error', 'No se pudo cambiar el estado');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const renderItem = ({ item }: { item: Promocion }) => (

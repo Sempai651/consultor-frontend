@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, TextInput, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
@@ -28,14 +28,24 @@ const HomeScreen = ({ navigation }: any) => {
 
   const menuItemsFiltrados = menuItems.filter(item => !item.adminOnly || isAdmin);
 
-  const handleLogout = async () => {
-    const confirmacion = window.confirm("¿Desea cerrar sesión?");
-    if (!confirmacion) return;
-    
-    await registrarActividad('logout', 'Cierre de sesión', 'Usuario cerró sesión');
-    
-    localStorage.clear();
-    window.location.reload();
+  // ✅ CORREGIDO: usar Alert.alert en lugar de window.confirm
+  const handleLogout = () => {
+    Alert.alert(
+      'Cerrar Sesión',
+      '¿Estás seguro de que deseas cerrar sesión?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Cerrar Sesión',
+          style: 'destructive',
+          onPress: async () => {
+            await registrarActividad('logout', 'Cierre de sesión', 'Usuario cerró sesión');
+            await signOut();
+            navigation.replace('Login');
+          }
+        }
+      ]
+    );
   };
 
   const handleMenuPress = async (item: any) => {

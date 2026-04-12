@@ -22,7 +22,7 @@ const cargarActividadesGuardadas = async () => {
       actividadesLocales = JSON.parse(guardadas);
     }
   } catch (error) {
-    console.error('Error cargando actividades:', error);
+    // Silenciado - no mostrar error
   }
 };
 
@@ -31,7 +31,7 @@ const guardarActividades = async () => {
   try {
     await AsyncStorage.setItem('@Actividades', JSON.stringify(actividadesLocales));
   } catch (error) {
-    console.error('Error guardando actividades:', error);
+    // Silenciado - no mostrar error
   }
 };
 
@@ -59,11 +59,11 @@ export const registrarActividad = async (
   
   await guardarActividades();
   
-  // Intentar enviar al backend
+  // Intentar enviar al backend (silenciosamente, sin mostrar error)
   try {
     await api.post('/actividad', nuevaActividad);
   } catch (error) {
-    console.log('Backend no disponible, actividad guardada localmente');
+    // Silenciado - no mostrar error en consola
   }
   
   return nuevaActividad;
@@ -73,7 +73,7 @@ export const registrarActividad = async (
 export const getActividadesRecientes = async (): Promise<Actividad[]> => {
   await cargarActividadesGuardadas();
   
-  // Intentar obtener del backend
+  // Intentar obtener del backend (silenciosamente)
   try {
     const response = await api.get('/actividad/reciente');
     const actividadesBackend = response.data.data || response.data;
@@ -81,7 +81,7 @@ export const getActividadesRecientes = async (): Promise<Actividad[]> => {
       return actividadesBackend;
     }
   } catch (error) {
-    console.log('Usando actividades locales');
+    // Silenciado - no mostrar error en consola
   }
   
   return actividadesLocales;
